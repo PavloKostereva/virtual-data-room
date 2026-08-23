@@ -1,0 +1,197 @@
+// Vault data model — see README for design notes.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  VIEWER
+  EDITOR
+  OWNER
+}
+
+enum ShareSubjectType {
+  DATA_ROOM
+  FOLDER
+  FILE
+}
+
+enum ShareMode {
+  PUBLIC_LINK
+  RESTRICTED
+}
+
+model User {
+  id        String   @id
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dataRooms      DataRoom[]
+  createdFolders Folder[]
+  createdFiles   File[]
+  fileVersions   FileVersion[]
+  createdShares  Share[]
+  shareGrants    ShareGrant[]
+  stars          Star[]
+
+  @@index([email])
+}
+
+model DataRoom {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+  deletedById String?
+
+  owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  folders Folder[]
+  files   File[]
+  shares  Share[]
+
+  @@index([ownerId, createdAt])
+  @@index([deletedAt])
+}
+
+model Folder {
+  id         String   @id @default(cuid())
+  dataRoomId String
+  parentId   String?
+  name       String
+  path       String
+  depth      Int      @default(0)
+  createdById String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  deletedAt   DateTime?
+  deletedById String?
+
+  dataRoom  DataRoom @relation(fields: [dataRoomId], references: [id], onDelete: Cascade)
+  parent    Folder?  @relation("FolderChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Folder[] @relation("FolderChildren")
+  files     File[]
+  createdBy  User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  shares     Share[]
+  stars      Star[]
+
+  @@index([dataRoomId, parentId])
+  @@index([dataRoomId, path])
+  @@index([dataRoomId, name])
+  @@index([parentId, updatedAt])
+  @@index([deletedAt])
+}
+
+model File {
+  id               String   @id @default(cuid())
+  dataRoomId       String
+  folderId         String
+  name             String
+  mimeType         String
+  size             Int
+  currentVersionId String?  @unique
+  versionCount     Int      @default(1)
+  createdById      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  deletedAt        DateTime?
+  deletedById      String?
+
+  dataRoom       DataRoom      @relation(fields: [dataRoomId], references: [id], onDelete: Cascade)
+  folder         Folder        @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  createdBy      User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  currentVersion FileVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  versions       FileVersion[] @relation("FileVersions")
+  shares         Share[]
+  stars          Star[]
+
+  @@index([dataRoomId, name])
+  @@index([folderId, updatedAt])
+  @@index([deletedAt])
+}
+
+model FileVersion {
+  id            String   @id @default(cuid())
+  fileId        String
+  versionNumber Int
+  size          Int
+  mimeType      String
+  storageKey    String
+  uploadedById  String?
+  createdAt     DateTime @default(now())
+
+  file          File  @relation("FileVersions", fields: [fileId], references: [id], onDelete: Cascade)
+  currentOfFile File? @relation("CurrentVersion")
+  uploadedBy    User? @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@unique([fileId, versionNumber])
+  @@index([fileId, createdAt])
+}
+
+model Share {
+  id         String           @id @default(cuid())
+  dataRoomId String
+  subjectType ShareSubjectType
+  folderId   String?
+  fileId     String?
+  mode       ShareMode
+  role       Role             @default(VIEWER)
+  token      String?          @unique
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  createdById String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  dataRoom  DataRoom     @relation(fields: [dataRoomId], references: [id], onDelete: Cascade)
+  folder    Folder?      @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  file      File?        @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  createdBy User?        @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  grants    ShareGrant[]
+
+  @@index([dataRoomId, revokedAt])
+  @@index([folderId])
+  @@index([fileId])
+}
+
+model ShareGrant {
+  id        String    @id @default(cuid())
+  shareId   String
+  email     String
+  userId    String?
+  role      Role      @default(VIEWER)
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  share Share @relation(fields: [shareId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([shareId, email])
+  @@index([email, revokedAt])
+}
+
+/// Per-user favourite (Google Drive–style star) for a file or folder.
+model Star {
+  id        String   @id @default(cuid())
+  userId    String
+  fileId    String?
+  folderId  String?
+  createdAt DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  file   File?   @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  folder Folder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([fileId])
+  @@index([folderId])
+}
