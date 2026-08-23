@@ -33,6 +33,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  passwordResetHash      String?
+  passwordResetExpiresAt DateTime?
+  passwordResetAttempts  Int       @default(0)
+
   dataRooms      DataRoom[]
   createdFolders Folder[]
   createdFiles   File[]

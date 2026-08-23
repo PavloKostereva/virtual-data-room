@@ -126,11 +126,91 @@ async function main() {
   });
   check("duplicate email is rejected", duplicate.status === 409);
 
+  const signedIn = await owner.request("/api/auth/login", {
+    method: "POST",
+    body: { email: ownerEmail, password: "correct-horse-battery" },
+  });
+  check("owner can sign in", signedIn.status === 200, JSON.stringify(signedIn.data));
+
   const me = await owner.request("/api/auth/me");
   check("session cookie identifies the owner", me.data?.user?.email === ownerEmail);
 
   const anonMe = await anonymous.request("/api/auth/me");
   check("anonymous visitor has no session", anonMe.data?.user === null);
+
+  section("Password reset");
+  const resetter = new Client("resetter");
+  const resetEmail = `reset-${stamp}@example.com`;
+  const resetRegistered = await resetter.request("/api/auth/register", {
+    method: "POST",
+    body: { name: "Riley Reset", email: resetEmail, password: "old-password-1" },
+  });
+  check("reset user can register", resetRegistered.status === 200, JSON.stringify(resetRegistered.data));
+
+  const unknownReset = await anonymous.request("/api/auth/forgot-password", {
+    method: "POST",
+    body: { email: `missing-${stamp}@example.com` },
+  });
+  check("unknown emails still get a generic success", unknownReset.status === 200);
+  check("unknown emails do not receive a code", unknownReset.data?.code == null);
+
+  const demoReset = await anonymous.request("/api/auth/forgot-password", {
+    method: "POST",
+    body: { email: "demo@vault.app" },
+  });
+  check("demo accounts cannot be reset", demoReset.status === 400);
+
+  const forgot = await anonymous.request("/api/auth/forgot-password", {
+    method: "POST",
+    body: { email: resetEmail },
+  });
+  check(
+    "forgot password issues a demo code",
+    forgot.status === 200 && typeof forgot.data?.code === "string",
+    JSON.stringify(forgot.data),
+  );
+
+  const badCode = await anonymous.request("/api/auth/reset-password", {
+    method: "POST",
+    body: { email: resetEmail, code: "000000", password: "new-password-1" },
+  });
+  check("wrong reset codes are rejected", badCode.status === 400);
+
+  const resetOk = await anonymous.request("/api/auth/reset-password", {
+    method: "POST",
+    body: { email: resetEmail, code: forgot.data.code, password: "new-password-1" },
+  });
+  check("password can be reset with the code", resetOk.status === 200, JSON.stringify(resetOk.data));
+
+  const oldLogin = await new Client("old").request("/api/auth/login", {
+    method: "POST",
+    body: { email: resetEmail, password: "old-password-1" },
+  });
+  check("old password no longer works", oldLogin.status === 401);
+
+  const newLogin = await resetter.request("/api/auth/login", {
+    method: "POST",
+    body: { email: resetEmail, password: "new-password-1" },
+  });
+  check("new password signs in", newLogin.status === 200);
+
+  const change = await resetter.request("/api/auth/change-password", {
+    method: "POST",
+    body: { currentPassword: "new-password-1", newPassword: "newer-password-1" },
+  });
+  check("signed-in user can change password", change.status === 200, JSON.stringify(change.data));
+
+  const afterChange = await new Client("after").request("/api/auth/login", {
+    method: "POST",
+    body: { email: resetEmail, password: "newer-password-1" },
+  });
+  check("changed password signs in", afterChange.status === 200);
+
+  const unauthChange = await anonymous.request("/api/auth/change-password", {
+    method: "POST",
+    body: { currentPassword: "x", newPassword: "abcdefgh" },
+  });
+  check("change password requires a session", unauthChange.status === 401);
 
   section("Data rooms and folders");
   const roomResponse = await owner.request("/api/data-rooms", {
@@ -321,6 +401,10 @@ async function main() {
   await invitee.request("/api/auth/register", {
     method: "POST",
     body: { name: "Bob Invitee", email: inviteeEmail, password: "correct-horse-battery" },
+  });
+  await invitee.request("/api/auth/login", {
+    method: "POST",
+    body: { email: inviteeEmail, password: "correct-horse-battery" },
   });
 
   const beforeInvite = await invitee.request(`/api/folders/${legal.id}`);

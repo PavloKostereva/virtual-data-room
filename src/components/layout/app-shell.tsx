@@ -1,11 +1,12 @@
 "use client";
 
-import { FolderLock, LogOut, Menu, Share2, Star, Trash2, Vault, X } from "lucide-react";
+import { FolderLock, KeyRound, LogOut, Menu, Share2, Star, Trash2, Vault, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 import { UploadTray } from "@/components/explorer/upload-tray";
+import { ChangePasswordDialog } from "@/components/dialogs/change-password-dialog";
 import { LocaleSwitcherItems } from "@/components/layout/locale-switcher";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,7 @@ export function AppShell({ user, children }: { user: UserDto; children: ReactNod
   const t = useTranslations("nav");
   const tc = useTranslations("common");
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const navItems = [
     { href: "/rooms", label: t("myDataRooms"), icon: FolderLock },
@@ -142,6 +144,15 @@ export function AppShell({ user, children }: { user: UserDto; children: ReactNod
                 <DropdownMenuSeparator />
                 <LocaleSwitcherItems />
                 <DropdownMenuItem
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    setChangePasswordOpen(true);
+                  }}
+                >
+                  <KeyRound />
+                  {t("changePassword")}
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   variant="destructive"
                   onSelect={() => logout.mutate()}
                   disabled={logout.isPending}
@@ -156,6 +167,7 @@ export function AppShell({ user, children }: { user: UserDto; children: ReactNod
       </div>
 
       <UploadTray />
+      <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
     </UploadProvider>
   );
 }

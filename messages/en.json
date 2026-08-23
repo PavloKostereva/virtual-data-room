@@ -26,6 +26,7 @@
     "starred": "Starred",
     "trash": "Trash",
     "signOut": "Sign out",
+    "changePassword": "Change password",
     "openNavigation": "Open navigation",
     "closeNavigation": "Close navigation"
   },
@@ -44,7 +45,26 @@
     "noAccount": "Don't have an account?",
     "createOne": "Create one",
     "hasAccount": "Already have an account?",
-    "accountCreated": "Account created. Sign in to continue."
+    "accountCreated": "Account created. Sign in to continue.",
+    "forgotPassword": "Forgot password?",
+    "forgotTitle": "Reset your password",
+    "forgotSubtitle": "We'll issue a one-time code. This demo does not send email, so the code appears on the next screen.",
+    "sendCode": "Send reset code",
+    "codeSent": "If an account exists for that email, a reset code was issued.",
+    "demoCodeHint": "Email isn't sent in this demo. Your code:",
+    "copyCode": "Copy",
+    "copiedCode": "Copied",
+    "code": "Reset code",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "resetPassword": "Set new password",
+    "passwordUpdated": "Password updated. Sign in with your new password.",
+    "useDifferentEmail": "Use a different email",
+    "changePasswordTitle": "Change password",
+    "changePasswordHint": "Choose a new password for this account.",
+    "currentPassword": "Current password",
+    "changePassword": "Update password",
+    "passwordChanged": "Your password has been updated."
   },
   "metadata": {
     "siteTitle": "Vault — secure data rooms",
@@ -52,6 +72,7 @@
     "titleTemplate": "%s · Vault",
     "signIn": "Sign in",
     "register": "Create account",
+    "forgotPassword": "Forgot password",
     "myDataRooms": "My data rooms",
     "sharedWithMe": "Shared with me",
     "starred": "Starred",
@@ -67,7 +88,10 @@
     "passwordMax": "Password must be at most 128 characters.",
     "nameRequired": "Name is required.",
     "nameTooLong": "Name is too long.",
-    "nameRequiredShort": "Name is required."
+    "nameRequiredShort": "Name is required.",
+    "passwordsMustMatch": "Passwords do not match.",
+    "codeInvalid": "Enter a 6-digit code.",
+    "passwordMustDiffer": "Choose a password that is different from the current one."
   },
   "errors": {
     "generic": "Something went wrong. Please try again.",

@@ -23,6 +23,31 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Password is required."),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+export const resetCodeSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{6}$/, "Enter a 6-digit code.");
+
+export const resetPasswordSchema = z.object({
+  email: emailSchema,
+  code: resetCodeSchema,
+  password: passwordSchema,
+});
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Password is required."),
+    newPassword: passwordSchema,
+  })
+  .refine((value) => value.currentPassword !== value.newPassword, {
+    message: "Choose a password that is different from the current one.",
+    path: ["newPassword"],
+  });
+
 export const itemNameSchema = z
   .string()
   .trim()
@@ -124,4 +149,7 @@ export const restoreTrashSchema = z.object({
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
 export type CreateDataRoomInput = z.infer<typeof createDataRoomSchema>;

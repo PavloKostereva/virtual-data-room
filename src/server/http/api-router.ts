@@ -3,13 +3,16 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createSupabaseRouteClient } from "@/lib/supabase/route";
 import {
+  changePasswordSchema,
   createDataRoomSchema,
   createFolderSchema,
   createShareSchema,
   finalizeUploadSchema,
+  forgotPasswordSchema,
   listQuerySchema,
   loginSchema,
   registerSchema,
+  resetPasswordSchema,
   searchQuerySchema,
   shareSubjectSchema,
   toggleStarSchema,
@@ -20,9 +23,17 @@ import {
   uploadTicketSchema,
 } from "@/lib/validation";
 import { badRequest } from "@/server/errors";
-import { requireUser } from "@/server/http/context";
+import { createRequestContext, requireUser } from "@/server/http/context";
 import { defineRoute, parseBody, parseQuery, toErrorResponse } from "@/server/http/route";
-import { login, logout, register, getCurrentUser } from "@/server/services/auth.service";
+import {
+  changePassword,
+  getCurrentUser,
+  login,
+  logout,
+  register,
+  requestPasswordReset,
+  resetPassword,
+} from "@/server/services/auth.service";
 import {
   createDataRoom,
   deleteDataRoom,
@@ -191,6 +202,42 @@ const ROUTES: ApiRoute[] = [
         return { user: await getCurrentUser(context.user.id) };
       }),
     ),
+  },
+  {
+    method: "POST",
+    pattern: "auth/forgot-password",
+    handle: wrap(
+      defineRoute(async ({ request }) => {
+        const input = await parseBody(request, forgotPasswordSchema);
+        return requestPasswordReset(input.email);
+      }),
+    ),
+  },
+  {
+    method: "POST",
+    pattern: "auth/reset-password",
+    handle: wrap(
+      defineRoute(async ({ request }) => {
+        const input = await parseBody(request, resetPasswordSchema);
+        return resetPassword(input);
+      }),
+    ),
+  },
+  {
+    method: "POST",
+    pattern: "auth/change-password",
+    handle: async (request) => {
+      try {
+        const { supabase, applyCookies } = createSupabaseRouteClient(request);
+        const context = await createRequestContext(request);
+        const user = requireUser(context);
+        const input = await parseBody(request, changePasswordSchema);
+        await changePassword(supabase, user, input);
+        return applyCookies(NextResponse.json({ ok: true }));
+      } catch (error) {
+        return toErrorResponse(error);
+      }
+    },
   },
   {
     method: "GET",

@@ -12,9 +12,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ registered?: string }>;
+  searchParams: Promise<{ registered?: string; reset?: string }>;
 }) {
   if (await getSession()) redirect("/rooms");
-  const { registered } = await searchParams;
-  return <LoginForm justRegistered={registered === "1"} />;
+  const { registered, reset } = await searchParams;
+  return <LoginForm justRegistered={registered === "1"} justReset={reset === "1"} />;
 }

@@ -4,16 +4,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Vault } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { useLogin, useRegister } from "@/hooks/use-auth";
+import { useForgotPassword, useLogin, useRegister, useResetPassword } from "@/hooks/use-auth";
 import { useFormatApiError } from "@/hooks/use-format-api-error";
 
-export function LoginForm({ justRegistered = false }: { justRegistered?: boolean }) {
+export function LoginForm({
+  justRegistered = false,
+  justReset = false,
+}: {
+  justRegistered?: boolean;
+  justReset?: boolean;
+}) {
   const t = useTranslations("auth");
   const tv = useTranslations("validation");
   const formatApiError = useFormatApiError();
@@ -83,12 +89,27 @@ export function LoginForm({ justRegistered = false }: { justRegistered?: boolean
           />
         </Field>
 
+        <p className="-mt-2 text-right text-sm">
+          <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+            {t("forgotPassword")}
+          </Link>
+        </p>
+
         {justRegistered && !login.error ? (
           <p
             role="status"
             className="rounded-sm border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-foreground"
           >
             {t("accountCreated")}
+          </p>
+        ) : null}
+
+        {justReset && !login.error && !justRegistered ? (
+          <p
+            role="status"
+            className="rounded-sm border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-foreground"
+          >
+            {t("passwordUpdated")}
           </p>
         ) : null}
 
@@ -196,6 +217,243 @@ export function RegisterForm() {
           {t("createAccount")}
         </Button>
       </form>
+    </AuthCard>
+  );
+}
+
+export function ForgotPasswordForm() {
+  const t = useTranslations("auth");
+  const tv = useTranslations("validation");
+  const formatApiError = useFormatApiError();
+  const requestReset = useForgotPassword();
+  const resetPassword = useResetPassword();
+  const [issuedCode, setIssuedCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [step, setStep] = useState<"email" | "reset">("email");
+
+  const emailSchema = useMemo(
+    () =>
+      z.object({
+        email: z
+          .string()
+          .trim()
+          .min(1, tv("emailRequired"))
+          .email(tv("emailInvalid"))
+          .transform((value) => value.toLowerCase()),
+      }),
+    [tv],
+  );
+
+  const resetSchema = useMemo(
+    () =>
+      z
+        .object({
+          email: z
+            .string()
+            .trim()
+            .min(1, tv("emailRequired"))
+            .email(tv("emailInvalid"))
+            .transform((value) => value.toLowerCase()),
+          code: z
+            .string()
+            .trim()
+            .regex(/^\d{6}$/, tv.has("codeInvalid") ? tv("codeInvalid") : "Enter a 6-digit code."),
+          password: z.string().min(8, tv("passwordMin")).max(128, tv("passwordMax")),
+          confirmPassword: z.string().min(8, tv("passwordMin")),
+        })
+        .refine((value) => value.password === value.confirmPassword, {
+          message: tv.has("passwordsMustMatch")
+            ? tv("passwordsMustMatch")
+            : "Passwords do not match.",
+          path: ["confirmPassword"],
+        }),
+    [tv],
+  );
+
+  type EmailInput = z.infer<typeof emailSchema>;
+  type ResetInput = z.infer<typeof resetSchema>;
+
+  const emailForm = useForm<EmailInput>({
+    resolver: zodResolver(emailSchema),
+    defaultValues: { email: "" },
+  });
+
+  const resetForm = useForm<ResetInput>({
+    resolver: zodResolver(resetSchema),
+    defaultValues: { email: "", code: "", password: "", confirmPassword: "" },
+  });
+
+  const email = emailForm.watch("email") || resetForm.watch("email");
+
+  return (
+    <AuthCard
+      title={t("forgotTitle")}
+      subtitle={t("forgotSubtitle")}
+      footer={
+        <>
+          {t("hasAccount")}{" "}
+          <Link href="/login" className="font-medium text-primary hover:underline">
+            {t("signIn")}
+          </Link>
+        </>
+      }
+    >
+      {step === "email" ? (
+        <form
+          noValidate
+          className="space-y-4"
+          onSubmit={emailForm.handleSubmit((values) => {
+            requestReset.mutate(values, {
+              onSuccess: (result) => {
+                setIssuedCode(result.code ?? null);
+                setCopied(false);
+                resetForm.reset({
+                  email: values.email,
+                  code: result.code ?? "",
+                  password: "",
+                  confirmPassword: "",
+                });
+                setStep("reset");
+              },
+            });
+          })}
+        >
+          <Field
+            label={t("email")}
+            htmlFor="forgot-email"
+            error={emailForm.formState.errors.email?.message}
+          >
+            <Input
+              id="forgot-email"
+              type="email"
+              autoComplete="email"
+              autoFocus
+              aria-invalid={Boolean(emailForm.formState.errors.email)}
+              {...emailForm.register("email")}
+            />
+          </Field>
+
+          <FormError error={requestReset.error} formatApiError={formatApiError} />
+
+          <Button type="submit" className="w-full" isLoading={requestReset.isPending}>
+            {t("sendCode")}
+          </Button>
+        </form>
+      ) : (
+        <form
+          noValidate
+          className="space-y-4"
+          onSubmit={resetForm.handleSubmit((values) => {
+            resetPassword.mutate({
+              email: values.email,
+              code: values.code,
+              password: values.password,
+            });
+          })}
+        >
+          <p role="status" className="text-sm text-muted-foreground">
+            {t("codeSent")}
+          </p>
+
+          {issuedCode ? (
+            <div className="rounded-sm border border-primary/20 bg-primary/5 px-3 py-3">
+              <p className="text-xs text-muted-foreground">{t("demoCodeHint")}</p>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <p className="font-mono text-lg tracking-[0.35em] text-foreground">{issuedCode}</p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(issuedCode);
+                    setCopied(true);
+                  }}
+                >
+                  {copied ? t("copiedCode") : t("copyCode")}
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
+          <Field
+            label={t("email")}
+            htmlFor="reset-email"
+            error={resetForm.formState.errors.email?.message}
+          >
+            <Input
+              id="reset-email"
+              type="email"
+              autoComplete="email"
+              aria-invalid={Boolean(resetForm.formState.errors.email)}
+              {...resetForm.register("email")}
+            />
+          </Field>
+
+          <Field
+            label={t("code")}
+            htmlFor="reset-code"
+            error={resetForm.formState.errors.code?.message}
+          >
+            <Input
+              id="reset-code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoFocus
+              maxLength={6}
+              aria-invalid={Boolean(resetForm.formState.errors.code)}
+              {...resetForm.register("code")}
+            />
+          </Field>
+
+          <Field
+            label={t("newPassword")}
+            htmlFor="reset-password"
+            hint={t("passwordHint")}
+            error={resetForm.formState.errors.password?.message}
+          >
+            <Input
+              id="reset-password"
+              type="password"
+              autoComplete="new-password"
+              aria-invalid={Boolean(resetForm.formState.errors.password)}
+              {...resetForm.register("password")}
+            />
+          </Field>
+
+          <Field
+            label={t("confirmPassword")}
+            htmlFor="reset-confirm"
+            error={resetForm.formState.errors.confirmPassword?.message}
+          >
+            <Input
+              id="reset-confirm"
+              type="password"
+              autoComplete="new-password"
+              aria-invalid={Boolean(resetForm.formState.errors.confirmPassword)}
+              {...resetForm.register("confirmPassword")}
+            />
+          </Field>
+
+          <FormError error={resetPassword.error} formatApiError={formatApiError} />
+
+          <Button type="submit" className="w-full" isLoading={resetPassword.isPending}>
+            {t("resetPassword")}
+          </Button>
+
+          <button
+            type="button"
+            className="w-full text-center text-sm font-medium text-primary hover:underline"
+            onClick={() => {
+              setStep("email");
+              emailForm.reset({ email });
+              requestReset.reset();
+              resetPassword.reset();
+            }}
+          >
+            {t("useDifferentEmail")}
+          </button>
+        </form>
+      )}
     </AuthCard>
   );
 }

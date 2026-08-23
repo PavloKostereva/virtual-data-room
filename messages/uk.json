@@ -26,6 +26,7 @@
     "starred": "Із зірочкою",
     "trash": "Кошик",
     "signOut": "Вийти",
+    "changePassword": "Змінити пароль",
     "openNavigation": "Відкрити меню",
     "closeNavigation": "Закрити меню"
   },
@@ -44,7 +45,26 @@
     "noAccount": "Немає облікового запису?",
     "createOne": "Створити",
     "hasAccount": "Уже маєте обліковий запис?",
-    "accountCreated": "Обліковий запис створено. Увійдіть, щоб продовжити."
+    "accountCreated": "Обліковий запис створено. Увійдіть, щоб продовжити.",
+    "forgotPassword": "Забули пароль?",
+    "forgotTitle": "Скинути пароль",
+    "forgotSubtitle": "Ми видамо одноразовий код. У цьому демо лист не надсилається, тож код з’явиться на наступному екрані.",
+    "sendCode": "Надіслати код",
+    "codeSent": "Якщо обліковий запис із цією адресою існує, код уже видано.",
+    "demoCodeHint": "У цьому демо лист не надсилається. Ваш код:",
+    "copyCode": "Копіювати",
+    "copiedCode": "Скопійовано",
+    "code": "Код скидання",
+    "newPassword": "Новий пароль",
+    "confirmPassword": "Підтвердіть пароль",
+    "resetPassword": "Встановити новий пароль",
+    "passwordUpdated": "Пароль оновлено. Увійдіть з новим паролем.",
+    "useDifferentEmail": "Інша email-адреса",
+    "changePasswordTitle": "Змінити пароль",
+    "changePasswordHint": "Оберіть новий пароль для цього облікового запису.",
+    "currentPassword": "Поточний пароль",
+    "changePassword": "Оновити пароль",
+    "passwordChanged": "Пароль успішно оновлено."
   },
   "metadata": {
     "siteTitle": "Vault — захищені кімнати даних",
@@ -52,6 +72,7 @@
     "titleTemplate": "%s · Vault",
     "signIn": "Увійти",
     "register": "Створити обліковий запис",
+    "forgotPassword": "Відновлення пароля",
     "myDataRooms": "Мої кімнати даних",
     "sharedWithMe": "Спільний доступ",
     "starred": "Із зірочкою",
@@ -67,7 +88,10 @@
     "passwordMax": "Пароль має містити не більше 128 символів.",
     "nameRequired": "Ім'я обов'язкове.",
     "nameTooLong": "Ім'я занадто довге.",
-    "nameRequiredShort": "Назва обов'язкова."
+    "nameRequiredShort": "Назва обов'язкова.",
+    "passwordsMustMatch": "Паролі не збігаються.",
+    "codeInvalid": "Введіть 6-значний код.",
+    "passwordMustDiffer": "Оберіть пароль, відмінний від поточного."
   },
   "errors": {
     "generic": "Щось пішло не так. Спробуйте ще раз.",

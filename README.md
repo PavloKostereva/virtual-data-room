@@ -33,6 +33,8 @@ After `db:seed` (and on the live app), sign in with:
 | Guest (sees **Shared with me**) | `guest@vault.app` | `demo1234` |
 
 You can also register any new email — no confirmation mail is sent.
+Forgot password issues a one-time code on screen (this demo does not send email).
+The seeded demo logins cannot be reset, so reviewers always have a working account.
 
 Docker Postgres if needed:
 
@@ -65,7 +67,7 @@ Use Supabase **pooler** URL (port 6543) for `DATABASE_URL`.
 
 ## What’s included
 
-- Auth (Supabase Auth email/password + profile sync to Prisma `User`)
+- Auth (Supabase email/password, forgot-password codes, change password, Prisma `User` sync)
 - Nested folders, breadcrumbs, recursive delete with size preview
 - Multi-file drag-and-drop upload, PDF/image preview, rename / move / delete
 - Name conflicts: version, rename, or cancel
@@ -137,7 +139,7 @@ gate writes with the existing `canWrite` path — no schema rewrite.
 With `npm run dev` running:
 
 ```bash
-npm run test:smoke   # 56 API checks
+npm run test:smoke   # 81 API checks
 ```
 
 After deploy, open **`GET /api/health`** — returns JSON with configuration, database, and storage checks (and hints if something is missing).

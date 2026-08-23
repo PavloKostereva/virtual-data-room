@@ -4,7 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { apiRequest } from "@/lib/api-client";
 import { queryKeys } from "@/lib/api/keys";
-import type { LoginInput, RegisterInput } from "@/lib/validation";
+import type {
+  ChangePasswordInput,
+  ForgotPasswordInput,
+  LoginInput,
+  RegisterInput,
+  ResetPasswordInput,
+} from "@/lib/validation";
 import type { UserDto } from "@/types/dto";
 
 export function useCurrentUser() {
@@ -54,5 +60,35 @@ export function useLogout() {
       router.replace("/login");
       router.refresh();
     },
+  });
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (input: ForgotPasswordInput) =>
+      apiRequest<{ ok: true; code?: string }>("/api/auth/forgot-password", {
+        method: "POST",
+        body: input,
+      }),
+  });
+}
+
+export function useResetPassword() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: (input: ResetPasswordInput) =>
+      apiRequest<{ ok: true }>("/api/auth/reset-password", { method: "POST", body: input }),
+    onSuccess: () => {
+      router.replace("/login?reset=1");
+      router.refresh();
+    },
+  });
+}
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (input: ChangePasswordInput) =>
+      apiRequest<{ ok: true }>("/api/auth/change-password", { method: "POST", body: input }),
   });
 }
